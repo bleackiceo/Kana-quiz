@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#2563eb">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="假名测试">
+<title>日语假名测试器</title>
+<style>
+:root{--b:#f5f7fb;--c:#fff;--t:#172033;--m:#6b7280;--l:#dbe2ea;--a:#2563eb;--a2:#eff6ff;--g:#15803d;--r:#dc2626}
+@media(prefers-color-scheme:dark){:root{--b:#0f172a;--c:#111827;--t:#e5e7eb;--m:#9ca3af;--l:#293548;--a:#60a5fa;--a2:#172554;--g:#4ade80;--r:#f87171}}
+*{box-sizing:border-box}body{margin:0;background:var(--b);color:var(--t);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif}
+main{max-width:920px;margin:auto;padding:16px 12px 40px}h1{font-size:26px;margin:6px 0}.sub,.sm{color:var(--m)}.sub{margin-bottom:14px}
+.card{background:var(--c);border:1px solid var(--l);border-radius:18px;padding:15px;margin:12px 0;box-shadow:0 8px 24px rgba(15,23,42,.07)}
+h3{margin:2px 0 10px;font-size:16px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:8px}.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.opt{border:1px solid var(--l);border-radius:11px;padding:9px 10px;display:flex;gap:7px;align-items:center}.groups{display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:7px}
+button,input,select{font:inherit}button{border:0;border-radius:11px;padding:10px 13px;font-weight:700}.pri{background:var(--a);color:white}.sec{background:var(--a2);color:var(--a);border:1px solid var(--l)}.ghost{background:transparent;color:var(--t);border:1px solid var(--l)}
+hr{border:0;border-top:1px solid var(--l);margin:14px 0}.hide{display:none!important}.msg{min-height:28px;margin-top:10px;font-weight:700}.good{color:var(--g)}.bad{color:var(--r)}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}.stat{border:1px solid var(--l);border-radius:11px;text-align:center;padding:9px}.stat b{display:block;font-size:19px}
+.quiz{min-height:260px;border:1px dashed var(--l);border-radius:16px;padding:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+.label{font-size:13px;color:var(--m)}#prompt{font-size:72px;font-weight:700;line-height:1.15;margin:8px 0}.roma{font-size:42px!important}
+.answer{display:flex;gap:8px;width:min(500px,100%);margin-top:12px}.answer input{flex:1;border:1px solid var(--l);background:var(--c);color:var(--t);border-radius:11px;padding:11px;text-align:center;font-size:20px}
+.choices{display:grid;grid-template-columns:1fr 1fr;gap:9px;width:min(500px,100%);margin-top:12px}.choice{background:var(--c);color:var(--t);border:1px solid var(--l);font-size:32px;padding:15px}.weak{display:grid;grid-template-columns:repeat(auto-fit,minmax(115px,1fr));gap:8px}.wi{border:1px solid var(--l);border-radius:11px;padding:9px;text-align:center}.wi b{font-size:24px}
+@media(max-width:600px){.stats{grid-template-columns:1fr 1fr}#prompt{font-size:62px}}
+</style>
+</head>
+<body><main>
+<h1>日语假名测试器</h1>
+<div class="sub">清音・浊音・半浊音・拗音｜平假名・片假名｜错题强化</div>
+
+<section id="setup" class="card">
+<h3>1. 出题方式</h3>
+<div class="grid">
+<label class="opt"><input type="radio" name="mode" value="kr" checked> 假名 → romaji</label>
+<label class="opt"><input type="radio" name="mode" value="rk"> romaji → 假名</label>
+<label class="opt"><input type="radio" name="mode" value="pair"> 平假名 ↔ 片假名</label>
+</div><hr>
+<h3>2. 文字范围</h3>
+<div class="grid">
+<label class="opt"><input type="radio" name="script" value="both" checked> 平 + 片混合</label>
+<label class="opt"><input type="radio" name="script" value="h"> 只考平假名</label>
+<label class="opt"><input type="radio" name="script" value="k"> 只考片假名</label>
+</div><hr>
+<h3>3. 音节范围</h3>
+<div class="row" style="margin-bottom:9px">
+<button class="sec" id="all">全选</button><button class="sec" id="none">全不选</button><button class="sec" id="ks">か行 + さ行</button><button class="sec" id="weakPreset">易错强化范围</button>
+</div>
+<div class="sm">清音</div><div id="base" class="groups"></div>
+<div class="sm" style="margin-top:10px">浊音 / 半浊音</div><div id="voiced" class="groups"></div>
+<div class="sm" style="margin-top:10px">拗音</div><div id="yoon" class="groups"></div>
+<hr>
+<h3>4. 设置</h3>
+<div class="row">
+<label class="opt">题数 <select id="count"><option>10</option><option selected>20</option><option>30</option><option>50</option><option value="0">不限</option></select></label>
+<label class="opt"><input id="boost" type="checkbox" checked> 易错强化</label>
+<label class="opt"><input id="retry" type="checkbox" checked> 答错必须重答</label>
+</div>
+<div class="row" style="margin-top:13px"><button class="pri" id="start">开始测试</button><button class="ghost" id="showStats">错题统计</button></div>
+<div id="setupMsg" class="msg"></div>
+</section>
+
+<section id="quizCard" class="card hide">
+<div class="stats">
+<div class="stat"><span class="sm">进度</span><b id="prog">0/20</b></div>
+<div class="stat"><span class="sm">正确率</span><b id="acc">0%</b></div>
+<div class="stat"><span class="sm">连对</span><b id="streak">0</b></div>
+<div class="stat"><span class="sm">错题</span><b id="wrong">0</b></div>
+</div>
+<div class="quiz">
+<div id="plabel" class="label"></div><div id="prompt">ク</div>
+<div id="typed" class="answer"><input id="ans" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="输入 romaji"><button class="pri" id="submit">提交</button></div>
+<div id="choices" class="choices hide"></div><div id="feedback" class="msg"></div>
+</div>
+<div class="row" style="margin-top:11px"><button class="ghost" id="stop">结束本轮</button><button class="sec" id="skip">跳过</button></div>
+</section>
+
+<section id="statsCard" class="card hide">
+<div class="row" style="justify-content:space-between"><div><h3>错题统计</h3><div class="sm">优先显示最容易错的假名</div></div><button class="ghost" id="closeStats">关闭</button></div>
+<div id="weakGrid" class="weak"></div>
+<div class="row" style="margin-top:11px"><button class="ghost" id="resetStats">清空统计</button></div>
+</section>
+</main>
+<script>
+var B=[
+["a","あ","ア","a"],["a","い","イ","i"],["a","う","ウ","u"],["a","え","エ","e"],["a","お","オ","o"],
+["ka","か","カ","ka"],["ka","き","キ","ki"],["ka","く","ク","ku"],["ka","け","ケ","ke"],["ka","こ","コ","ko"],
+["sa","さ","サ","sa"],["sa","し","シ","shi"],["sa","す","ス","su"],["sa","せ","セ","se"],["sa","そ","ソ","so"],
+["ta","た","タ","ta"],["ta","ち","チ","chi"],["ta","つ","ツ","tsu"],["ta","て","テ","te"],["ta","と","ト","to"],
+["na","な","ナ","na"],["na","に","ニ","ni"],["na","ぬ","ヌ","nu"],["na","ね","ネ","ne"],["na","の","ノ","no"],
+["ha","は","ハ","ha"],["ha","ひ","ヒ","hi"],["ha","ふ","フ","fu"],["ha","へ","ヘ","he"],["ha","ほ","ホ","ho"],
+["ma","ま","マ","ma"],["ma","み","ミ","mi"],["ma","む","ム","mu"],["ma","め","メ","me"],["ma","も","モ","mo"],
+["ya","や","ヤ","ya"],["ya","ゆ","ユ","yu"],["ya","よ","ヨ","yo"],
+["ra","ら","ラ","ra"],["ra","り","リ","ri"],["ra","る","ル","ru"],["ra","れ","レ","re"],["ra","ろ","ロ","ro"],
+["wa","わ","ワ","wa"],["wa","を","ヲ","o"],["n","ん","ン","n"]];
+var V=[
+["ga","が","ガ","ga"],["ga","ぎ","ギ","gi"],["ga","ぐ","グ","gu"],["ga","げ","ゲ","ge"],["ga","ご","ゴ","go"],
+["za","ざ","ザ","za"],["za","じ","ジ","ji"],["za","ず","ズ","zu"],["za","ぜ","ゼ","ze"],["za","ぞ","ゾ","zo"],
+["da","だ","ダ","da"],["da","ぢ","ヂ","ji"],["da","づ","ヅ","zu"],["da","で","デ","de"],["da","ど","ド","do"],
+["ba","ば","バ","ba"],["ba","び","ビ","bi"],["ba","ぶ","ブ","bu"],["ba","べ","ベ","be"],["ba","ぼ","ボ","bo"],
+["pa","ぱ","パ","pa"],["pa","ぴ","ピ","pi"],["pa","ぷ","プ","pu"],["pa","ぺ","ペ","pe"],["pa","ぽ","ポ","po"]];
+var Y=[
+["kya","きゃ","キャ","kya"],["kya","きゅ","キュ","kyu"],["kya","きょ","キョ","kyo"],
+["sha","しゃ","シャ","sha"],["sha","しゅ","シュ","shu"],["sha","しょ","ショ","sho"],
+["cha","ちゃ","チャ","cha"],["cha","ちゅ","チュ","chu"],["cha","ちょ","チョ","cho"],
+["nya","にゃ","ニャ","nya"],["nya","にゅ","ニュ","nyu"],["nya","にょ","ニョ","nyo"],
+["hya","ひゃ","ヒャ","hya"],["hya","ひゅ","ヒュ","hyu"],["hya","ひょ","ヒョ","hyo"],
+["mya","みゃ","ミャ","mya"],["mya","みゅ","ミュ","myu"],["mya","みょ","ミョ","myo"],
+["rya","りゃ","リャ","rya"],["rya","りゅ","リュ","ryu"],["rya","りょ","リョ","ryo"],
+["gya","ぎゃ","ギャ","gya"],["gya","ぎゅ","ギュ","gyu"],["gya","ぎょ","ギョ","gyo"],
+["ja","じゃ","ジャ","ja"],["ja","じゅ","ジュ","ju"],["ja","じょ","ジョ","jo"],
+["bya","びゃ","ビャ","bya"],["bya","びゅ","ビュ","byu"],["bya","びょ","ビョ","byo"],
+["pya","ぴゃ","ピャ","pya"],["pya","ぴゅ","ピュ","pyu"],["pya","ぴょ","ピョ","pyo"]];
+var A=B.concat(V,Y).map(function(x,i){return{id:i,g:x[0],h:x[1],k:x[2],r:x[3],t:i<B.length?"b":i<B.length+V.length?"v":"y"}});
+var labels={a:"あ行",ka:"か行",sa:"さ行",ta:"た行",na:"な行",ha:"は行",ma:"ま行",ya:"や行",ra:"ら行",wa:"わ行",n:"ん",ga:"が行",za:"ざ行",da:"だ行",ba:"ば行",pa:"ぱ行",kya:"きゃ行",sha:"しゃ行",cha:"ちゃ行",nya:"にゃ行",hya:"ひゃ行",mya:"みゃ行",rya:"りゃ行",gya:"ぎゃ行",ja:"じゃ行",bya:"びゃ行",pya:"ぴゃ行"};
+var preset=["ク","ス","シ","ソ","ケ","き","か","し","サ"];
+var alt={shi:["shi","si"],chi:["chi","ti"],tsu:["tsu","tu"],fu:["fu","hu"],ji:["ji","zi"],sha:["sha","sya"],shu:["shu","syu"],sho:["sho","syo"],cha:["cha","tya"],chu:["chu","tyu"],cho:["cho","tyo"],ja:["ja","zya"],ju:["ju","zyu"],jo:["jo","zyo"]};
+function q(id){return document.getElementById(id)}
+function groups(type,target){
+ var gs=[];A.filter(function(x){return x.t==type}).forEach(function(x){if(gs.indexOf(x.g)<0)gs.push(x.g)});
+ gs.forEach(function(g){var l=document.createElement("label");l.className="opt";l.innerHTML='<input class="grp" type="checkbox" value="'+g+'" '+(type=="b"?"checked":"")+'> '+labels[g];q(target).appendChild(l)})
+}
+groups("b","base");groups("v","voiced");groups("y","yoon");
+function setg(a){document.querySelectorAll(".grp").forEach(function(x){x.checked=a.indexOf(x.value)>=0})}
+q("all").onclick=function(){document.querySelectorAll(".grp").forEach(function(x){x.checked=true})};
+q("none").onclick=function(){setg([])};q("ks").onclick=function(){setg(["ka","sa"])};
+q("weakPreset").onclick=function(){setg(["ka","sa"]);q("boost").checked=true};
+function load(){try{return JSON.parse(localStorage.getItem("kanaStats")||"{}")}catch(e){return{}}}
+function save(s){localStorage.setItem("kanaStats",JSON.stringify(s))}
+function bump(i,bad){var s=load(),z=i.h+"|"+i.k+"|"+i.r;s[z]=s[z]||{h:i.h,k:i.k,r:i.r,n:0,w:0};s[z].n++;if(bad)s[z].w++;save(s)}
+function rnd(a){return a[Math.floor(Math.random()*a.length)]}
+function pool(){var g=Array.from(document.querySelectorAll(".grp:checked")).map(function(x){return x.value});return A.filter(function(x){return g.indexOf(x.g)>=0})}
+function script(){var s=document.querySelector('input[name="script"]:checked').value;return s=="both"?(Math.random()<.5?"h":"k"):s}
+function pick(p){if(!q("boost").checked)return rnd(p);var s=load(),bag=[];p.forEach(function(i){var z=s[i.h+"|"+i.k+"|"+i.r],w=1+(z?Math.min(6,z.w*1.5):0);if(preset.indexOf(i.h)>=0||preset.indexOf(i.k)>=0)w+=1.5;for(var n=0;n<Math.ceil(w);n++)bag.push(i)});return rnd(bag)}
+function rok(a,r){a=a.trim().toLowerCase().replace(/\s+/g,"");return (alt[r]||[r]).indexOf(a)>=0}
+var S=null;
+q("start").onclick=function(){var p=pool();if(!p.length){q("setupMsg").textContent="请至少选择一个范围";q("setupMsg").className="msg bad";return}S={p:p,m:document.querySelector('input[name="mode"]:checked').value,total:+q("count").value,done:0,ok:0,att:0,st:0,wrong:0,locked:false,first:true};q("setup").classList.add("hide");q("quizCard").classList.remove("hide");q("statsCard").classList.add("hide");next()};
+function next(){if(S.total&&S.done>=S.total){finish();return}S.i=pick(S.p);S.sc=script();S.locked=false;S.first=true;q("feedback").textContent="";q("choices").innerHTML="";if(S.m=="kr"){q("prompt").textContent=S.i[S.sc];q("prompt").className="";q("plabel").textContent=S.sc=="h"?"平假名 → romaji":"片假名 → romaji";q("typed").classList.remove("hide");q("choices").classList.add("hide");q("ans").value="";setTimeout(function(){q("ans").focus()},30)}else if(S.m=="rk"){q("prompt").textContent=S.i.r;q("prompt").className="roma";q("plabel").textContent="请选择对应"+(S.sc=="h"?"平假名":"片假名");q("typed").classList.add("hide");q("choices").classList.remove("hide");choices(S.sc)}else{S.from=Math.random()<.5?"h":"k";S.to=S.from=="h"?"k":"h";q("prompt").textContent=S.i[S.from];q("prompt").className="";q("plabel").textContent=(S.from=="h"?"平假名":"片假名")+" → "+(S.to=="h"?"平假名":"片假名");q("typed").classList.add("hide");q("choices").classList.remove("hide");choices(S.to)}ui()}
+function choices(sc){var cor=S.i[sc],o=S.p.filter(function(x){return x.id!=S.i.id}),v=[];while(v.length<3&&o.length){var x=o.splice(Math.floor(Math.random()*o.length),1)[0],z=x[sc];if(z!=cor&&v.indexOf(z)<0)v.push(z)}[cor].concat(v).sort(function(){return Math.random()-.5}).forEach(function(z){var b=document.createElement("button");b.className="choice";b.textContent=z;b.onclick=function(){choose(z,b,sc)};q("choices").appendChild(b)})}
+function result(ok){S.att++;if(ok){S.ok++;S.st++}else{S.st=0;S.wrong++}}
+function typed(){if(S.locked)return;var ok=rok(q("ans").value,S.i.r);if(ok){if(S.first)result(true);bump(S.i,false);q("feedback").textContent="对 ✅ "+S.i[S.sc]+" = "+S.i.r;q("feedback").className="msg good";S.done++;S.locked=true;ui();setTimeout(next,500)}else{if(S.first){result(false);bump(S.i,true)}S.first=false;q("feedback").textContent="错了："+S.i[S.sc]+" = "+S.i.r+"。再答一次。";q("feedback").className="msg bad";ui();if(q("retry").checked){q("ans").value="";q("ans").focus()}else{S.done++;S.locked=true;setTimeout(next,800)}}}
+q("submit").onclick=typed;q("ans").addEventListener("keydown",function(e){if(e.key=="Enter")typed()});
+function choose(v,b,sc){if(S.locked)return;var cor=S.i[sc],ok=v==cor;if(ok){if(S.first)result(true);bump(S.i,false);q("feedback").textContent="对 ✅ "+S.i.h+" / "+S.i.k+" = "+S.i.r;q("feedback").className="msg good";S.done++;S.locked=true;ui();setTimeout(next,550)}else{if(S.first){result(false);bump(S.i,true)}S.first=false;b.disabled=true;q("feedback").textContent="错了，正确答案是 "+cor;q("feedback").className="msg bad";ui();if(!q("retry").checked){S.done++;S.locked=true;setTimeout(next,800)}}}
+function ui(){q("prog").textContent=S.done+"/"+(S.total||"∞");q("acc").textContent=(S.att?Math.round(S.ok/S.att*100):0)+"%";q("streak").textContent=S.st;q("wrong").textContent=S.wrong}
+function finish(){q("plabel").textContent="本轮完成";q("prompt").textContent=(S.att?Math.round(S.ok/S.att*100):0)+"%";q("prompt").className="roma";q("typed").classList.add("hide");q("choices").classList.add("hide");q("feedback").textContent="完成 "+S.done+" 题，本轮错题 "+S.wrong}
+q("stop").onclick=function(){q("quizCard").classList.add("hide");q("setup").classList.remove("hide")};q("skip").onclick=function(){if(!S||S.locked)return;S.done++;S.st=0;next()};
+function stats(){var s=Object.values(load()).sort(function(a,b){return b.w-a.w});q("weakGrid").innerHTML="";if(!s.length)q("weakGrid").innerHTML='<div class="sm">还没有统计数据，先做几轮吧。</div>';else s.slice(0,30).forEach(function(x){var d=document.createElement("div");d.className="wi";d.innerHTML="<b>"+x.h+" / "+x.k+"</b><div>"+x.r+'</div><div class="sm">错 '+x.w+" 次 · "+Math.round(x.w/x.n*100)+"%</div>";q("weakGrid").appendChild(d)});q("statsCard").classList.remove("hide")}
+q("showStats").onclick=stats;q("closeStats").onclick=function(){q("statsCard").classList.add("hide")};q("resetStats").onclick=function(){if(confirm("确定清空统计吗？")){localStorage.removeItem("kanaStats");stats()}};
+</script></body></html>
