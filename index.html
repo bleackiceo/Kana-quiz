@@ -38,7 +38,8 @@ hr{border:0;border-top:1px solid var(--l);margin:14px 0}.hide{display:none!impor
 <div class="grid">
 <label class="opt"><input type="radio" name="mode" value="kr" checked> 假名 → romaji</label>
 <label class="opt"><input type="radio" name="mode" value="rk"> romaji → 假名</label>
-<label class="opt"><input type="radio" name="mode" value="pair"> 平假名 ↔ 片假名</label>\n<label class="opt"><input type="radio" name="mode" value="listen"> 🔊 听音 → 写假名</label>
+<label class="opt"><input type="radio" name="mode" value="pair"> 平假名 ↔ 片假名</label>
+<label class="opt"><input type="radio" name="mode" value="listen"> 🔊 听音 → 写假名</label>
 </div><hr>
 <h3>2. 文字范围</h3>
 <div class="grid">
@@ -60,7 +61,7 @@ hr{border:0;border-top:1px solid var(--l);margin:14px 0}.hide{display:none!impor
 <label class="opt"><input id="boost" type="checkbox" checked> 易错强化</label>
 <label class="opt"><input id="retry" type="checkbox" checked> 答错必须重答</label>
 </div>
-<div class="sm" style="margin-top:9px">听音模式会自动跳过现代日语中无法仅靠声音区分的假名（お/を、じ/ぢ、ず/づ）。</div><div class="row" style="margin-top:13px"><button class="pri" id="start">开始测试</button><button class="ghost" id="showStats">错题统计</button></div>
+<div class="sm" style="margin-top:9px">听音模式会自动跳过现代日语中无法仅靠声音区分的假名（お/を、じ/ぢ、ず/づ）。iPhone 为避免 Safari 拦截自动播放，每题需要手动点一次“播放声音”。</div><div class="row" style="margin-top:13px"><button class="pri" id="start">开始测试</button><button class="ghost" id="showStats">错题统计</button></div>
 <div id="setupMsg" class="msg"></div>
 </section>
 
@@ -137,6 +138,41 @@ function pool(){var g=Array.from(document.querySelectorAll(".grp:checked")).map(
 function script(){var s=document.querySelector('input[name="script"]:checked').value;return s=="both"?(Math.random()<.5?"h":"k"):s}
 function pick(p){if(!q("boost").checked)return rnd(p);var s=load(),bag=[];p.forEach(function(i){var z=s[i.h+"|"+i.k+"|"+i.r],w=1+(z?Math.min(6,z.w*1.5):0);if(preset.indexOf(i.h)>=0||preset.indexOf(i.k)>=0)w+=1.5;for(var n=0;n<Math.ceil(w);n++)bag.push(i)});return rnd(bag)}
 function rok(a,r){a=a.trim().toLowerCase().replace(/\s+/g,"");return (alt[r]||[r]).indexOf(a)>=0}
+function speakKana(){
+ if(!S||!S.i)return;
+ if(!("speechSynthesis" in window)||typeof SpeechSynthesisUtterance==="undefined"){
+   q("feedback").textContent="当前浏览器不支持系统语音，请用 Safari 打开网页。";
+   q("feedback").className="msg bad";
+   return;
+ }
+ var synth=window.speechSynthesis;
+ var u=new SpeechSynthesisUtterance(S.i.h);
+ u.lang="ja-JP";
+ u.rate=0.78;
+ u.pitch=1;
+ u.volume=1;
+ var voices=synth.getVoices();
+ var jp=voices.find(function(v){return /^ja(-|_)/i.test(v.lang)}) ||
+        voices.find(function(v){return /Japanese|Kyoko|Otoya/i.test(v.name)});
+ if(jp)u.voice=jp;
+ u.onerror=function(){
+   q("feedback").textContent="播放失败。请确认媒体音量已打开，然后再点一次“播放声音”。";
+   q("feedback").className="msg bad";
+ };
+ u.onstart=function(){
+   q("feedback").textContent="";
+   q("feedback").className="msg";
+ };
+ try{
+   if(synth.speaking||synth.pending)synth.cancel();
+   synth.resume();
+   synth.speak(u);
+ }catch(e){
+   q("feedback").textContent="播放失败。请用 Safari 打开网页后再试。";
+   q("feedback").className="msg bad";
+ }
+}
+q("replay").onclick=function(){speakKana();q("replay").textContent="🔊 再听一次"};
 var S=null;
 q("start").onclick=function(){var p=pool();if(!p.length){q("setupMsg").textContent="请至少选择一个范围";q("setupMsg").className="msg bad";return}S={p:p,m:document.querySelector('input[name="mode"]:checked').value,total:+q("count").value,done:0,ok:0,att:0,st:0,wrong:0,locked:false,first:true};q("setup").classList.add("hide");q("quizCard").classList.remove("hide");q("statsCard").classList.add("hide");next()};
 function next(){
@@ -155,10 +191,11 @@ function next(){
    q("typed").classList.add("hide");q("choices").classList.remove("hide");choices(S.sc);
  }else if(S.m=="listen"){
    q("prompt").textContent="♪";q("prompt").className="roma";
-   q("plabel").textContent="听音后写出"+(S.sc=="h"?"平假名":"片假名");
+   q("plabel").textContent="先点“播放声音”，再写出"+(S.sc=="h"?"平假名":"片假名");
    q("typed").classList.remove("hide");q("choices").classList.add("hide");q("replay").classList.remove("hide");
    q("ans").value="";q("ans").placeholder=S.sc=="h"?"输入平假名":"输入片假名";
-   setTimeout(function(){speakKana();q("ans").focus()},80);
+   q("replay").textContent="🔊 播放声音";
+   setTimeout(function(){q("ans").focus()},30);
  }else{
    S.from=Math.random()<.5?"h":"k";S.to=S.from=="h"?"k":"h";
    q("prompt").textContent=S.i[S.from];q("prompt").className="";
