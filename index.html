@@ -60,7 +60,7 @@ hr{border:0;border-top:1px solid var(--l);margin:14px 0}.hide{display:none!impor
 <label class="opt"><input id="boost" type="checkbox" checked> 易错强化</label>
 <label class="opt"><input id="retry" type="checkbox" checked> 答错必须重答</label>
 </div>
-<div class="row" style="margin-top:13px"><button class="pri" id="start">开始测试</button><button class="ghost" id="showStats">错题统计</button></div>
+<div class="sm" style="margin-top:9px">听音模式会自动跳过现代日语中无法仅靠声音区分的假名（お/を、じ/ぢ、ず/づ）。</div><div class="row" style="margin-top:13px"><button class="pri" id="start">开始测试</button><button class="ghost" id="showStats">错题统计</button></div>
 <div id="setupMsg" class="msg"></div>
 </section>
 
@@ -141,7 +141,7 @@ var S=null;
 q("start").onclick=function(){var p=pool();if(!p.length){q("setupMsg").textContent="请至少选择一个范围";q("setupMsg").className="msg bad";return}S={p:p,m:document.querySelector('input[name="mode"]:checked').value,total:+q("count").value,done:0,ok:0,att:0,st:0,wrong:0,locked:false,first:true};q("setup").classList.add("hide");q("quizCard").classList.remove("hide");q("statsCard").classList.add("hide");next()};
 function next(){
  if(S.total&&S.done>=S.total){finish();return}
- S.i=pick(S.p);S.sc=script();S.locked=false;S.first=true;
+ var qp=S.m=="listen"?S.p.filter(function(x){return ["お","を","じ","ぢ","ず","づ"].indexOf(x.h)<0}):S.p;if(!qp.length){q("feedback").textContent="当前范围在听音模式下没有可区分的题目，请返回后扩大范围。";q("feedback").className="msg bad";return}S.i=pick(qp);S.sc=script();S.locked=false;S.first=true;
  q("feedback").textContent="";q("choices").innerHTML="";q("replay").classList.add("hide");
  if(S.m=="kr"){
    q("prompt").textContent=S.i[S.sc];q("prompt").className="";
