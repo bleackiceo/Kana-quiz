@@ -4,6 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#2563eb">
+<link rel="manifest" href="./manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="假名测试">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="假名测试">
 <title>日语假名测试器</title>
@@ -146,4 +150,7 @@ function finish(){q("plabel").textContent="本轮完成";q("prompt").textContent
 q("stop").onclick=function(){q("quizCard").classList.add("hide");q("setup").classList.remove("hide")};q("skip").onclick=function(){if(!S||S.locked)return;S.done++;S.st=0;next()};
 function stats(){var s=Object.values(load()).sort(function(a,b){return b.w-a.w});q("weakGrid").innerHTML="";if(!s.length)q("weakGrid").innerHTML='<div class="sm">还没有统计数据，先做几轮吧。</div>';else s.slice(0,30).forEach(function(x){var d=document.createElement("div");d.className="wi";d.innerHTML="<b>"+x.h+" / "+x.k+"</b><div>"+x.r+'</div><div class="sm">错 '+x.w+" 次 · "+Math.round(x.w/x.n*100)+"%</div>";q("weakGrid").appendChild(d)});q("statsCard").classList.remove("hide")}
 q("showStats").onclick=stats;q("closeStats").onclick=function(){q("statsCard").classList.add("hide")};q("resetStats").onclick=function(){if(confirm("确定清空统计吗？")){localStorage.removeItem("kanaStats");stats()}};
+</script>
+<script>
+if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('./sw.js').catch(function(){})})}
 </script></body></html>
