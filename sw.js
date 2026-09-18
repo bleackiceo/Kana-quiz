@@ -1,4 +1,4 @@
-const CACHE='kana-quiz-v4';
+const CACHE='kana-quiz-v7';
 const ASSETS=['./','./index.html','./manifest.json','./icon.svg'];
 
 self.addEventListener('install', event => {
