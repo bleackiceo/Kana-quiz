@@ -60,6 +60,7 @@ hr{border:0;border-top:1px solid var(--l);margin:14px 0}.hide{display:none!impor
 <label class="opt">题数 <select id="count"><option>10</option><option selected>20</option><option>30</option><option>50</option><option value="0">不限</option></select></label>
 <label class="opt"><input id="boost" type="checkbox" checked> 易错强化</label>
 <label class="opt"><input id="retry" type="checkbox" checked> 答错必须重答</label>
+<label class="opt">听音速度 <select id="speechRate"><option value="0.45">很慢</option><option value="0.55" selected>慢</option><option value="0.7">正常偏慢</option><option value="0.9">正常</option></select></label>
 </div>
 <div class="sm" style="margin-top:9px">听音模式会自动跳过现代日语中无法仅靠声音区分的假名（お/を、じ/ぢ、ず/づ）。iPhone 为避免 Safari 拦截自动播放，每题需要手动点一次“播放声音”。</div><div class="row" style="margin-top:13px"><button class="pri" id="start">开始测试</button><button class="ghost" id="showStats">错题统计</button></div>
 <div id="setupMsg" class="msg"></div>
@@ -148,7 +149,7 @@ function speakKana(){
  var synth=window.speechSynthesis;
  var u=new SpeechSynthesisUtterance(S.i.h);
  u.lang="ja-JP";
- u.rate=0.78;
+ u.rate=parseFloat((q("speechRate")&&q("speechRate").value)||"0.55");
  u.pitch=1;
  u.volume=1;
  var voices=synth.getVoices();
