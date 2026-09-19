@@ -1,9 +1,11 @@
-const CACHE='kana-quiz-v7';
+const CACHE='kana-quiz-offline-v1';
 const ASSETS=['./','./index.html','./manifest.json','./icon.svg'];
 
 self.addEventListener('install', event => {
   self.skipWaiting();
-  event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS)));
+  event.waitUntil(
+    caches.open(CACHE).then(cache => cache.addAll(ASSETS))
+  );
 });
 
 self.addEventListener('activate', event => {
@@ -15,30 +17,32 @@ self.addEventListener('activate', event => {
 });
 
 self.addEventListener('fetch', event => {
-  const req = event.request;
+  if (event.request.method !== 'GET') return;
 
-  if (req.mode === 'navigate') {
+  if (event.request.mode === 'navigate') {
     event.respondWith(
-      fetch(req, {cache:'no-store'})
-        .then(res => {
-          const copy = res.clone();
-          caches.open(CACHE).then(cache => cache.put('./index.html', copy));
-          return res;
-        })
-        .catch(() => caches.match('./index.html'))
+      caches.match('./index.html').then(cached => {
+        if (cached) return cached;
+        return fetch(event.request).then(response => {
+          const copy=response.clone();
+          caches.open(CACHE).then(cache => cache.put('./index.html',copy));
+          return response;
+        });
+      })
     );
     return;
   }
 
   event.respondWith(
-    fetch(req)
-      .then(res => {
-        if (req.method === 'GET' && res.ok) {
-          const copy = res.clone();
-          caches.open(CACHE).then(cache => cache.put(req, copy));
+    caches.match(event.request).then(cached => {
+      if (cached) return cached;
+      return fetch(event.request).then(response => {
+        if (response && response.ok) {
+          const copy=response.clone();
+          caches.open(CACHE).then(cache => cache.put(event.request,copy));
         }
-        return res;
-      })
-      .catch(() => caches.match(req))
+        return response;
+      });
+    })
   );
 });
