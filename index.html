@@ -8,8 +8,6 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="假名测试">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="假名测试">
 <title>日语假名测试器</title>
 <style>
 :root{--b:#f5f7fb;--c:#fff;--t:#172033;--m:#6b7280;--l:#dbe2ea;--a:#2563eb;--a2:#eff6ff;--g:#15803d;--r:#dc2626}
@@ -32,6 +30,7 @@ hr{border:0;border-top:1px solid var(--l);margin:14px 0}.hide{display:none!impor
 <body><main>
 <h1>日语假名测试器</h1>
 <div class="sub">清音・浊音・半浊音・拗音｜平假名・片假名｜错题强化</div>
+<div id="offlineStatus" class="sm">正在准备离线模式…</div>
 
 <section id="setup" class="card">
 <h3>1. 出题方式</h3>
@@ -39,7 +38,6 @@ hr{border:0;border-top:1px solid var(--l);margin:14px 0}.hide{display:none!impor
 <label class="opt"><input type="radio" name="mode" value="kr" checked> 假名 → romaji</label>
 <label class="opt"><input type="radio" name="mode" value="rk"> romaji → 假名</label>
 <label class="opt"><input type="radio" name="mode" value="pair"> 平假名 ↔ 片假名</label>
-<label class="opt"><input type="radio" name="mode" value="listen"> 🔊 听音 → 写假名</label>
 </div><hr>
 <h3>2. 文字范围</h3>
 <div class="grid">
@@ -60,9 +58,7 @@ hr{border:0;border-top:1px solid var(--l);margin:14px 0}.hide{display:none!impor
 <label class="opt">题数 <select id="count"><option>10</option><option selected>20</option><option>30</option><option>50</option><option value="0">不限</option></select></label>
 <label class="opt"><input id="boost" type="checkbox" checked> 易错强化</label>
 <label class="opt"><input id="retry" type="checkbox" checked> 答错必须重答</label>
-<label class="opt">听音速度 <select id="speechRate"><option value="0.45">很慢</option><option value="0.55" selected>慢</option><option value="0.7">正常偏慢</option><option value="0.9">正常</option></select></label>
-</div>
-<div class="sm" style="margin-top:9px">听音模式会自动跳过现代日语中无法仅靠声音区分的假名（お/を、じ/ぢ、ず/づ）。iPhone 为避免 Safari 拦截自动播放，每题需要手动点一次“播放声音”。</div><div class="row" style="margin-top:13px"><button class="pri" id="start">开始测试</button><button class="ghost" id="showStats">错题统计</button></div>
+</div><div class="row" style="margin-top:13px"><button class="pri" id="start">开始测试</button><button class="ghost" id="showStats">错题统计</button></div>
 <div id="setupMsg" class="msg"></div>
 </section>
 
@@ -74,7 +70,7 @@ hr{border:0;border-top:1px solid var(--l);margin:14px 0}.hide{display:none!impor
 <div class="stat"><span class="sm">错题</span><b id="wrong">0</b></div>
 </div>
 <div class="quiz">
-<div id="plabel" class="label"></div><div id="prompt">ク</div><button id="replay" class="sec hide" type="button">🔊 再听一次</button>
+<div id="plabel" class="label"></div><div id="prompt">ク</div>
 <div id="typed" class="answer"><input id="ans" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="输入 romaji"><button class="pri" id="submit">提交</button></div>
 <div id="choices" class="choices hide"></div><div id="feedback" class="msg"></div>
 </div>
@@ -139,47 +135,12 @@ function pool(){var g=Array.from(document.querySelectorAll(".grp:checked")).map(
 function script(){var s=document.querySelector('input[name="script"]:checked').value;return s=="both"?(Math.random()<.5?"h":"k"):s}
 function pick(p){if(!q("boost").checked)return rnd(p);var s=load(),bag=[];p.forEach(function(i){var z=s[i.h+"|"+i.k+"|"+i.r],w=1+(z?Math.min(6,z.w*1.5):0);if(preset.indexOf(i.h)>=0||preset.indexOf(i.k)>=0)w+=1.5;for(var n=0;n<Math.ceil(w);n++)bag.push(i)});return rnd(bag)}
 function rok(a,r){a=a.trim().toLowerCase().replace(/\s+/g,"");return (alt[r]||[r]).indexOf(a)>=0}
-function speakKana(){
- if(!S||!S.i)return;
- if(!("speechSynthesis" in window)||typeof SpeechSynthesisUtterance==="undefined"){
-   q("feedback").textContent="当前浏览器不支持系统语音，请用 Safari 打开网页。";
-   q("feedback").className="msg bad";
-   return;
- }
- var synth=window.speechSynthesis;
- var u=new SpeechSynthesisUtterance(S.i.h);
- u.lang="ja-JP";
- u.rate=parseFloat((q("speechRate")&&q("speechRate").value)||"0.55");
- u.pitch=1;
- u.volume=1;
- var voices=synth.getVoices();
- var jp=voices.find(function(v){return /^ja(-|_)/i.test(v.lang)}) ||
-        voices.find(function(v){return /Japanese|Kyoko|Otoya/i.test(v.name)});
- if(jp)u.voice=jp;
- u.onerror=function(){
-   q("feedback").textContent="播放失败。请确认媒体音量已打开，然后再点一次“播放声音”。";
-   q("feedback").className="msg bad";
- };
- u.onstart=function(){
-   q("feedback").textContent="";
-   q("feedback").className="msg";
- };
- try{
-   if(synth.speaking||synth.pending)synth.cancel();
-   synth.resume();
-   synth.speak(u);
- }catch(e){
-   q("feedback").textContent="播放失败。请用 Safari 打开网页后再试。";
-   q("feedback").className="msg bad";
- }
-}
-q("replay").onclick=function(){speakKana();q("replay").textContent="🔊 再听一次"};
 var S=null;
 q("start").onclick=function(){var p=pool();if(!p.length){q("setupMsg").textContent="请至少选择一个范围";q("setupMsg").className="msg bad";return}S={p:p,m:document.querySelector('input[name="mode"]:checked').value,total:+q("count").value,done:0,ok:0,att:0,st:0,wrong:0,locked:false,first:true};q("setup").classList.add("hide");q("quizCard").classList.remove("hide");q("statsCard").classList.add("hide");next()};
 function next(){
  if(S.total&&S.done>=S.total){finish();return}
- var qp=S.m=="listen"?S.p.filter(function(x){return ["お","を","じ","ぢ","ず","づ"].indexOf(x.h)<0}):S.p;if(!qp.length){q("feedback").textContent="当前范围在听音模式下没有可区分的题目，请返回后扩大范围。";q("feedback").className="msg bad";return}S.i=pick(qp);S.sc=script();S.locked=false;S.first=true;
- q("feedback").textContent="";q("choices").innerHTML="";q("replay").classList.add("hide");
+ S.i=pick(S.p);S.sc=script();S.locked=false;S.first=true;
+ q("feedback").textContent="";q("choices").innerHTML="";
  if(S.m=="kr"){
    q("prompt").textContent=S.i[S.sc];q("prompt").className="";
    q("plabel").textContent=S.sc=="h"?"平假名 → romaji":"片假名 → romaji";
@@ -190,13 +151,6 @@ function next(){
    q("prompt").textContent=S.i.r;q("prompt").className="roma";
    q("plabel").textContent="请选择对应"+(S.sc=="h"?"平假名":"片假名");
    q("typed").classList.add("hide");q("choices").classList.remove("hide");choices(S.sc);
- }else if(S.m=="listen"){
-   q("prompt").textContent="♪";q("prompt").className="roma";
-   q("plabel").textContent="先点“播放声音”，再写出"+(S.sc=="h"?"平假名":"片假名");
-   q("typed").classList.remove("hide");q("choices").classList.add("hide");q("replay").classList.remove("hide");
-   q("ans").value="";q("ans").placeholder=S.sc=="h"?"输入平假名":"输入片假名";
-   q("replay").textContent="🔊 播放声音";
-   setTimeout(function(){q("ans").focus()},30);
  }else{
    S.from=Math.random()<.5?"h":"k";S.to=S.from=="h"?"k":"h";
    q("prompt").textContent=S.i[S.from];q("prompt").className="";
@@ -209,30 +163,45 @@ function choices(sc){var cor=S.i[sc],o=S.p.filter(function(x){return x.id!=S.i.i
 function result(ok){S.att++;if(ok){S.ok++;S.st++}else{S.st=0;S.wrong++}}
 function typed(){
  if(S.locked)return;
- var answer=q("ans").value.trim();
- var listen=S.m=="listen";
- var correct=listen?S.i[S.sc]:S.i.r;
- var ok=listen?(answer==correct):rok(answer,S.i.r);
+ var ok=rok(q("ans").value,S.i.r);
  if(ok){
    if(S.first)result(true);bump(S.i,false);
-   q("feedback").textContent=listen?("对 ✅ "+S.i.h+" / "+S.i.k+" = "+S.i.r):("对 ✅ "+S.i[S.sc]+" = "+S.i.r);
-   q("feedback").className="msg good";S.done++;S.locked=true;ui();setTimeout(next,550);
+   q("feedback").textContent="对 ✅ "+S.i[S.sc]+" = "+S.i.r;
+   q("feedback").className="msg good";S.done++;S.locked=true;ui();setTimeout(next,500);
  }else{
    if(S.first){result(false);bump(S.i,true)}S.first=false;
-   q("feedback").textContent=listen?("错了，正确答案是 "+correct+"（"+S.i.r+"）。再答一次。"):("错了："+S.i[S.sc]+" = "+S.i.r+"。再答一次。");
+   q("feedback").textContent="错了："+S.i[S.sc]+" = "+S.i.r+"。再答一次。";
    q("feedback").className="msg bad";ui();
    if(q("retry").checked){q("ans").value="";q("ans").focus()}
-   else{S.done++;S.locked=true;setTimeout(next,850)}
+   else{S.done++;S.locked=true;setTimeout(next,800)}
  }
 }
 q("submit").onclick=typed;q("ans").addEventListener("keydown",function(e){if(e.key=="Enter")typed()});
 function choose(v,b,sc){if(S.locked)return;var cor=S.i[sc],ok=v==cor;if(ok){if(S.first)result(true);bump(S.i,false);q("feedback").textContent="对 ✅ "+S.i.h+" / "+S.i.k+" = "+S.i.r;q("feedback").className="msg good";S.done++;S.locked=true;ui();setTimeout(next,550)}else{if(S.first){result(false);bump(S.i,true)}S.first=false;b.disabled=true;q("feedback").textContent="错了，正确答案是 "+cor;q("feedback").className="msg bad";ui();if(!q("retry").checked){S.done++;S.locked=true;setTimeout(next,800)}}}
 function ui(){q("prog").textContent=S.done+"/"+(S.total||"∞");q("acc").textContent=(S.att?Math.round(S.ok/S.att*100):0)+"%";q("streak").textContent=S.st;q("wrong").textContent=S.wrong}
-function finish(){q("replay").classList.add("hide");q("plabel").textContent="本轮完成";q("prompt").textContent=(S.att?Math.round(S.ok/S.att*100):0)+"%";q("prompt").className="roma";q("typed").classList.add("hide");q("choices").classList.add("hide");q("feedback").textContent="完成 "+S.done+" 题，本轮错题 "+S.wrong}
+function finish(){q("plabel").textContent="本轮完成";q("prompt").textContent=(S.att?Math.round(S.ok/S.att*100):0)+"%";q("prompt").className="roma";q("typed").classList.add("hide");q("choices").classList.add("hide");q("feedback").textContent="完成 "+S.done+" 题，本轮错题 "+S.wrong}
 q("stop").onclick=function(){q("quizCard").classList.add("hide");q("setup").classList.remove("hide")};q("skip").onclick=function(){if(!S||S.locked)return;S.done++;S.st=0;next()};
 function stats(){var s=Object.values(load()).sort(function(a,b){return b.w-a.w});q("weakGrid").innerHTML="";if(!s.length)q("weakGrid").innerHTML='<div class="sm">还没有统计数据，先做几轮吧。</div>';else s.slice(0,30).forEach(function(x){var d=document.createElement("div");d.className="wi";d.innerHTML="<b>"+x.h+" / "+x.k+"</b><div>"+x.r+'</div><div class="sm">错 '+x.w+" 次 · "+Math.round(x.w/x.n*100)+"%</div>";q("weakGrid").appendChild(d)});q("statsCard").classList.remove("hide")}
 q("showStats").onclick=stats;q("closeStats").onclick=function(){q("statsCard").classList.add("hide")};q("resetStats").onclick=function(){if(confirm("确定清空统计吗？")){localStorage.removeItem("kanaStats");stats()}};
 </script>
 <script>
-if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('./sw.js').catch(function(){})})}
+(function(){
+ var el=document.getElementById("offlineStatus");
+ function setStatus(){
+   if(!navigator.onLine){el.textContent="✓ 离线模式：当前无网络，仍可使用";return}
+   el.textContent="✓ 离线模式已准备：以后断网也可以打开";
+ }
+ window.addEventListener("online",setStatus);
+ window.addEventListener("offline",setStatus);
+ if("serviceWorker" in navigator){
+   window.addEventListener("load",function(){
+     navigator.serviceWorker.register("./sw.js")
+       .then(function(reg){reg.update().catch(function(){});return navigator.serviceWorker.ready})
+       .then(setStatus)
+       .catch(function(){el.textContent="离线缓存尚未完成，请联网刷新一次"});
+   });
+ }else{
+   el.textContent="当前浏览器不支持离线缓存";
+ }
+})();
 </script></body></html>
