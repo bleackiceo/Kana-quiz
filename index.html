@@ -58,7 +58,8 @@ hr{border:0;border-top:1px solid var(--l);margin:14px 0}.hide{display:none!impor
 <label class="opt">题数 <select id="count"><option>10</option><option selected>20</option><option>30</option><option>50</option><option value="0">不限</option></select></label>
 <label class="opt"><input id="boost" type="checkbox" checked> 易错强化</label>
 <label class="opt"><input id="retry" type="checkbox" checked> 答错必须重答</label>
-</div><div class="row" style="margin-top:13px"><button class="pri" id="start">开始测试</button><button class="ghost" id="showStats">错题统计</button></div>
+</div>
+<div class="sm" style="margin-top:9px">本轮规则：答对后本轮不再出现；答错或跳过的假名会留在题池里，之后可以再次出现。</div><div class="row" style="margin-top:13px"><button class="pri" id="start">开始测试</button><button class="ghost" id="showStats">错题统计</button></div>
 <div id="setupMsg" class="msg"></div>
 </section>
 
@@ -136,23 +137,71 @@ function script(){var s=document.querySelector('input[name="script"]:checked').v
 function pick(p){if(!q("boost").checked)return rnd(p);var s=load(),bag=[];p.forEach(function(i){var z=s[i.h+"|"+i.k+"|"+i.r],w=1+(z?Math.min(6,z.w*1.5):0);if(preset.indexOf(i.h)>=0||preset.indexOf(i.k)>=0)w+=1.5;for(var n=0;n<Math.ceil(w);n++)bag.push(i)});return rnd(bag)}
 function rok(a,r){a=a.trim().toLowerCase().replace(/\s+/g,"");return (alt[r]||[r]).indexOf(a)>=0}
 var S=null;
-q("start").onclick=function(){var p=pool();if(!p.length){q("setupMsg").textContent="请至少选择一个范围";q("setupMsg").className="msg bad";return}S={p:p,m:document.querySelector('input[name="mode"]:checked').value,total:+q("count").value,done:0,ok:0,att:0,st:0,wrong:0,locked:false,first:true};q("setup").classList.add("hide");q("quizCard").classList.remove("hide");q("statsCard").classList.add("hide");next()};
+function makeSlots(p,m){
+ var setting=document.querySelector('input[name="script"]:checked').value;
+ var scripts=setting=="both"?["h","k"]:[setting];
+ var slots=[];
+ p.forEach(function(i){
+   scripts.forEach(function(sc){
+     if(m=="pair"){
+       slots.push({i:i,from:sc,to:sc=="h"?"k":"h",key:i.id+"|pair|"+sc});
+     }else{
+       slots.push({i:i,sc:sc,key:i.id+"|"+m+"|"+sc});
+     }
+   });
+ });
+ return slots;
+}
+function pickSlot(slots){
+ if(!q("boost").checked)return rnd(slots);
+ var stats=load(),bag=[];
+ slots.forEach(function(s){
+   var i=s.i,z=stats[i.h+"|"+i.k+"|"+i.r];
+   var w=1+(z?Math.min(6,z.w*1.5):0);
+   if(preset.indexOf(i.h)>=0||preset.indexOf(i.k)>=0)w+=1.5;
+   if(S&&S.missed[s.key])w+=4;
+   for(var n=0;n<Math.ceil(w);n++)bag.push(s);
+ });
+ return rnd(bag);
+}
+function masterCurrent(){
+ if(!S.mastered[S.slot.key]){
+   S.mastered[S.slot.key]=true;
+   delete S.missed[S.slot.key];
+   S.done++;
+ }
+}
+q("start").onclick=function(){
+ var p=pool();
+ if(!p.length){q("setupMsg").textContent="请至少选择一个范围";q("setupMsg").className="msg bad";return}
+ var m=document.querySelector('input[name="mode"]:checked').value;
+ var slots=makeSlots(p,m);
+ var requested=+q("count").value;
+ var target=requested?Math.min(requested,slots.length):slots.length;
+ S={p:p,m:m,slots:slots,target:target,requested:requested,done:0,ok:0,att:0,st:0,wrong:0,locked:false,first:true,mastered:{},missed:{}};
+ q("setupMsg").textContent="";
+ q("setup").classList.add("hide");q("quizCard").classList.remove("hide");q("statsCard").classList.add("hide");next()
+};
 function next(){
- if(S.total&&S.done>=S.total){finish();return}
- S.i=pick(S.p);S.sc=script();S.locked=false;S.first=true;
+ if(S.done>=S.target){finish();return}
+ var remaining=S.slots.filter(function(s){return !S.mastered[s.key]});
+ if(!remaining.length){finish();return}
+ S.slot=pickSlot(remaining);S.i=S.slot.i;S.locked=false;S.first=true;
  q("feedback").textContent="";q("choices").innerHTML="";
  if(S.m=="kr"){
+   S.sc=S.slot.sc;
    q("prompt").textContent=S.i[S.sc];q("prompt").className="";
    q("plabel").textContent=S.sc=="h"?"平假名 → romaji":"片假名 → romaji";
    q("typed").classList.remove("hide");q("choices").classList.add("hide");
    q("ans").value="";q("ans").placeholder="输入 romaji";
    setTimeout(function(){q("ans").focus()},30);
  }else if(S.m=="rk"){
+   S.sc=S.slot.sc;
    q("prompt").textContent=S.i.r;q("prompt").className="roma";
    q("plabel").textContent="请选择对应"+(S.sc=="h"?"平假名":"片假名");
    q("typed").classList.add("hide");q("choices").classList.remove("hide");choices(S.sc);
  }else{
-   S.from=Math.random()<.5?"h":"k";S.to=S.from=="h"?"k":"h";
+   S.from=S.slot.from;S.to=S.slot.to;
    q("prompt").textContent=S.i[S.from];q("prompt").className="";
    q("plabel").textContent=(S.from=="h"?"平假名":"片假名")+" → "+(S.to=="h"?"平假名":"片假名");
    q("typed").classList.add("hide");q("choices").classList.remove("hide");choices(S.to);
@@ -165,22 +214,53 @@ function typed(){
  if(S.locked)return;
  var ok=rok(q("ans").value,S.i.r);
  if(ok){
-   if(S.first)result(true);bump(S.i,false);
-   q("feedback").textContent="对 ✅ "+S.i[S.sc]+" = "+S.i.r;
-   q("feedback").className="msg good";S.done++;S.locked=true;ui();setTimeout(next,500);
+   if(S.first)result(true);bump(S.i,false);masterCurrent();
+   q("feedback").textContent="对 ✅ "+S.i[S.sc]+" = "+S.i.r+"；本轮不再出现";
+   q("feedback").className="msg good";S.locked=true;ui();setTimeout(next,500);
  }else{
-   if(S.first){result(false);bump(S.i,true)}S.first=false;
-   q("feedback").textContent="错了："+S.i[S.sc]+" = "+S.i.r+"。再答一次。";
+   if(S.first){result(false);bump(S.i,true);S.missed[S.slot.key]=(S.missed[S.slot.key]||0)+1}
+   S.first=false;
+   q("feedback").textContent="错了："+S.i[S.sc]+" = "+S.i.r+"。这个假名会留在题池里。";
    q("feedback").className="msg bad";ui();
    if(q("retry").checked){q("ans").value="";q("ans").focus()}
-   else{S.done++;S.locked=true;setTimeout(next,800)}
+   else{S.locked=true;setTimeout(next,800)}
  }
 }
 q("submit").onclick=typed;q("ans").addEventListener("keydown",function(e){if(e.key=="Enter")typed()});
-function choose(v,b,sc){if(S.locked)return;var cor=S.i[sc],ok=v==cor;if(ok){if(S.first)result(true);bump(S.i,false);q("feedback").textContent="对 ✅ "+S.i.h+" / "+S.i.k+" = "+S.i.r;q("feedback").className="msg good";S.done++;S.locked=true;ui();setTimeout(next,550)}else{if(S.first){result(false);bump(S.i,true)}S.first=false;b.disabled=true;q("feedback").textContent="错了，正确答案是 "+cor;q("feedback").className="msg bad";ui();if(!q("retry").checked){S.done++;S.locked=true;setTimeout(next,800)}}}
-function ui(){q("prog").textContent=S.done+"/"+(S.total||"∞");q("acc").textContent=(S.att?Math.round(S.ok/S.att*100):0)+"%";q("streak").textContent=S.st;q("wrong").textContent=S.wrong}
-function finish(){q("plabel").textContent="本轮完成";q("prompt").textContent=(S.att?Math.round(S.ok/S.att*100):0)+"%";q("prompt").className="roma";q("typed").classList.add("hide");q("choices").classList.add("hide");q("feedback").textContent="完成 "+S.done+" 题，本轮错题 "+S.wrong}
-q("stop").onclick=function(){q("quizCard").classList.add("hide");q("setup").classList.remove("hide")};q("skip").onclick=function(){if(!S||S.locked)return;S.done++;S.st=0;next()};
+function choose(v,b,sc){
+ if(S.locked)return;
+ var cor=S.i[sc],ok=v==cor;
+ if(ok){
+   if(S.first)result(true);bump(S.i,false);masterCurrent();
+   q("feedback").textContent="对 ✅ "+S.i.h+" / "+S.i.k+" = "+S.i.r+"；本轮不再出现";
+   q("feedback").className="msg good";S.locked=true;ui();setTimeout(next,550);
+ }else{
+   if(S.first){result(false);bump(S.i,true);S.missed[S.slot.key]=(S.missed[S.slot.key]||0)+1}
+   S.first=false;b.disabled=true;
+   q("feedback").textContent="错了，正确答案是 "+cor+"。这个假名会留在题池里。";
+   q("feedback").className="msg bad";ui();
+   if(!q("retry").checked){S.locked=true;setTimeout(next,800)}
+ }
+}
+function ui(){
+ q("prog").textContent=S.done+"/"+S.target;
+ q("acc").textContent=(S.att?Math.round(S.ok/S.att*100):0)+"%";
+ q("streak").textContent=S.st;
+ q("wrong").textContent=S.wrong
+}
+function finish(){
+ q("plabel").textContent="本轮完成";
+ q("prompt").textContent=(S.att?Math.round(S.ok/S.att*100):0)+"%";
+ q("prompt").className="roma";
+ q("typed").classList.add("hide");q("choices").classList.add("hide");
+ q("feedback").textContent="已掌握 "+S.done+" 个假名，本轮错误 "+S.wrong+" 次。答对的假名本轮没有重复出现。"
+}
+q("stop").onclick=function(){q("quizCard").classList.add("hide");q("setup").classList.remove("hide")};
+q("skip").onclick=function(){
+ if(!S||S.locked)return;
+ S.missed[S.slot.key]=(S.missed[S.slot.key]||0)+1;
+ S.st=0;S.locked=true;next()
+};
 function stats(){var s=Object.values(load()).sort(function(a,b){return b.w-a.w});q("weakGrid").innerHTML="";if(!s.length)q("weakGrid").innerHTML='<div class="sm">还没有统计数据，先做几轮吧。</div>';else s.slice(0,30).forEach(function(x){var d=document.createElement("div");d.className="wi";d.innerHTML="<b>"+x.h+" / "+x.k+"</b><div>"+x.r+'</div><div class="sm">错 '+x.w+" 次 · "+Math.round(x.w/x.n*100)+"%</div>";q("weakGrid").appendChild(d)});q("statsCard").classList.remove("hide")}
 q("showStats").onclick=stats;q("closeStats").onclick=function(){q("statsCard").classList.add("hide")};q("resetStats").onclick=function(){if(confirm("确定清空统计吗？")){localStorage.removeItem("kanaStats");stats()}};
 </script>
