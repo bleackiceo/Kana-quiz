@@ -24,12 +24,17 @@ hr{border:0;border-top:1px solid var(--l);margin:14px 0}.hide{display:none!impor
 .label{font-size:13px;color:var(--m)}#prompt{font-size:72px;font-weight:700;line-height:1.15;margin:8px 0}.roma{font-size:42px!important}
 .answer{display:flex;gap:8px;width:min(500px,100%);margin-top:12px}.answer input{flex:1;border:1px solid var(--l);background:var(--c);color:var(--t);border-radius:11px;padding:11px;text-align:center;font-size:20px}
 .choices{display:grid;grid-template-columns:1fr 1fr;gap:9px;width:min(500px,100%);margin-top:12px}.choice{background:var(--c);color:var(--t);border:1px solid var(--l);font-size:32px;padding:15px}.weak{display:grid;grid-template-columns:repeat(auto-fit,minmax(115px,1fr));gap:8px}.wi{border:1px solid var(--l);border-radius:11px;padding:9px;text-align:center}.wi b{font-size:24px}
+.vocab-nav{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.vocab-nav input,.vocab-nav select{border:1px solid var(--l);background:var(--c);color:var(--t);border-radius:11px;padding:10px}
+.kana-picker{display:grid;grid-template-columns:repeat(auto-fit,minmax(74px,1fr));gap:7px;margin-top:12px}
+.kana-btn{background:var(--c);color:var(--t);border:1px solid var(--l);padding:8px 6px}.kana-btn b{display:block;font-size:24px}.kana-btn span{font-size:11px;color:var(--m)}.kana-btn.active{outline:2px solid var(--a);background:var(--a2)}
+.focusbox{border:1px solid var(--l);border-radius:15px;padding:14px;margin-top:14px;background:var(--a2)}.focuskana{font-size:38px;font-weight:800}.focusromaji{color:var(--m);margin-left:8px}
+.word-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:9px;margin-top:12px}.word-card{border:1px solid var(--l);border-radius:14px;padding:12px;background:var(--c)}.word-main{font-size:23px;font-weight:800}.word-reading{font-size:18px;margin-top:4px}.word-romaji{color:var(--m);font-size:14px;margin-top:3px}.word-zh{margin-top:7px}.tag{display:inline-block;color:var(--m);font-size:11px;border:1px solid var(--l);border-radius:999px;padding:2px 7px;margin-top:7px}mark{background:transparent;color:var(--a);font-weight:900;text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:3px}
 @media(max-width:600px){.stats{grid-template-columns:1fr 1fr}#prompt{font-size:62px}}
 </style>
 </head>
 <body><main>
 <h1>日语假名测试器</h1>
-<div class="sub">清音・浊音・半浊音・拗音｜平假名・片假名｜错题强化</div>
+<div class="sub">清音・浊音・半浊音・拗音｜假名练习｜500词联想</div>
 <div id="offlineStatus" class="sm">正在准备离线模式…</div>
 
 <section id="setup" class="card">
@@ -59,8 +64,42 @@ hr{border:0;border-top:1px solid var(--l);margin:14px 0}.hide{display:none!impor
 <label class="opt"><input id="boost" type="checkbox" checked> 易错强化</label>
 <label class="opt"><input id="retry" type="checkbox" checked> 答错必须重答</label>
 </div>
-<div class="sm" style="margin-top:9px">本轮规则：答对后本轮不再出现；答错或跳过的假名会留在题池里，之后可以再次出现。</div><div class="row" style="margin-top:13px"><button class="pri" id="start">开始测试</button><button class="ghost" id="showStats">错题统计</button></div>
+<div class="sm" style="margin-top:9px">本轮规则：答对后本轮不再出现；答错或跳过的假名会留在题池里，之后可以再次出现。</div><div class="row" style="margin-top:13px"><button class="pri" id="start">开始测试</button><button class="sec" id="openVocab">📚 500词联想库</button><button class="ghost" id="showStats">错题统计</button></div>
 <div id="setupMsg" class="msg"></div>
+</section>
+
+
+<section id="vocabCard" class="card hide">
+<div class="row" style="justify-content:space-between">
+  <div><h3>假名 × 单词联想</h3><div class="sm">不是考试。点一个假名，看它在真实常用词里怎么出现，建立“字形 → 音 → 单词”的联结。</div></div>
+  <button class="ghost" id="closeVocab">返回</button>
+</div>
+<div class="vocab-nav" style="margin-top:12px">
+  <label class="opt">假名范围
+    <select id="vocabSet">
+      <option value="b" selected>清音</option>
+      <option value="v">浊音 / 半浊音</option>
+      <option value="y">拗音</option>
+      <option value="all">全部</option>
+    </select>
+  </label>
+  <label class="opt">类别
+    <select id="vocabCat"><option value="">全部类别</option></select>
+  </label>
+  <input id="vocabSearch" placeholder="搜索日文 / 读音 / 中文">
+  <label class="opt"><input id="showVocabRomaji" type="checkbox" checked> 显示 romaji</label>
+  <button class="sec" id="randomKana">随机假名</button>
+</div>
+<div id="kanaPicker" class="kana-picker"></div>
+<div id="vocabFocus" class="focusbox">
+  <span class="focuskana" id="focusKana">あ / ア</span><span class="focusromaji" id="focusRomaji">a</span>
+  <div class="sm" id="focusHint">下面只显示读音中包含这个假名的词。</div>
+</div>
+<div class="row" style="justify-content:space-between;margin-top:12px">
+  <b id="wordCount">0 个关联词</b>
+  <span class="sm">蓝色下划线 = 当前假名</span>
+</div>
+<div id="wordList" class="word-list"></div>
 </section>
 
 <section id="quizCard" class="card hide">
@@ -84,6 +123,7 @@ hr{border:0;border-top:1px solid var(--l);margin:14px 0}.hide{display:none!impor
 <div class="row" style="margin-top:11px"><button class="ghost" id="resetStats">清空统计</button></div>
 </section>
 </main>
+<script src="./words.js"></script>
 <script>
 var B=[
 ["a","あ","ア","a"],["a","い","イ","i"],["a","う","ウ","u"],["a","え","エ","e"],["a","お","オ","o"],
@@ -261,6 +301,91 @@ q("skip").onclick=function(){
  S.missed[S.slot.key]=(S.missed[S.slot.key]||0)+1;
  S.st=0;S.locked=true;next()
 };
+function esc(s){return String(s).replace(/[&<>"']/g,function(ch){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]})}
+var VSEL=null;
+var HEP={
+"きゃ":"kya","きゅ":"kyu","きょ":"kyo","しゃ":"sha","しゅ":"shu","しょ":"sho","ちゃ":"cha","ちゅ":"chu","ちょ":"cho","にゃ":"nya","にゅ":"nyu","にょ":"nyo","ひゃ":"hya","ひゅ":"hyu","ひょ":"hyo","みゃ":"mya","みゅ":"myu","みょ":"myo","りゃ":"rya","りゅ":"ryu","りょ":"ryo","ぎゃ":"gya","ぎゅ":"gyu","ぎょ":"gyo","じゃ":"ja","じゅ":"ju","じょ":"jo","びゃ":"bya","びゅ":"byu","びょ":"byo","ぴゃ":"pya","ぴゅ":"pyu","ぴょ":"pyo",
+"あ":"a","い":"i","う":"u","え":"e","お":"o","か":"ka","き":"ki","く":"ku","け":"ke","こ":"ko","さ":"sa","し":"shi","す":"su","せ":"se","そ":"so","た":"ta","ち":"chi","つ":"tsu","て":"te","と":"to","な":"na","に":"ni","ぬ":"nu","ね":"ne","の":"no","は":"ha","ひ":"hi","ふ":"fu","へ":"he","ほ":"ho","ま":"ma","み":"mi","む":"mu","め":"me","も":"mo","や":"ya","ゆ":"yu","よ":"yo","ら":"ra","り":"ri","る":"ru","れ":"re","ろ":"ro","わ":"wa","を":"o","ん":"n",
+"が":"ga","ぎ":"gi","ぐ":"gu","げ":"ge","ご":"go","ざ":"za","じ":"ji","ず":"zu","ぜ":"ze","ぞ":"zo","だ":"da","ぢ":"ji","づ":"zu","で":"de","ど":"do","ば":"ba","び":"bi","ぶ":"bu","べ":"be","ぼ":"bo","ぱ":"pa","ぴ":"pi","ぷ":"pu","ぺ":"pe","ぽ":"po","ぁ":"a","ぃ":"i","ぅ":"u","ぇ":"e","ぉ":"o"
+};
+function hira(s){
+ return String(s).replace(/[ァ-ヶ]/g,function(ch){return String.fromCharCode(ch.charCodeAt(0)-0x60)});
+}
+function romanize(k){
+ k=hira(k);var out="",i=0;
+ while(i<k.length){
+   if(k[i]=="っ"){
+     var d=HEP[k.slice(i+1,i+3)]||HEP[k[i+1]]||"";
+     if(d){out+=(d[0]=="c"?"t":d[0]);}i++;continue;
+   }
+   if(k[i]=="ー"){
+     var m=out.match(/[aeiou](?!.*[aeiou])/);if(m)out+=m[0];i++;continue;
+   }
+   var two=k.slice(i,i+2),r=HEP[two];
+   if(r){out+=r;i+=2;continue}
+   r=HEP[k[i]];out+=r||k[i];i++;
+ }
+ return out;
+}
+function highlightKana(reading,target){
+ var h=hira(reading),t=target.h;
+ return esc(h).split(esc(t)).join("<mark>"+esc(t)+"</mark>");
+}
+function vocabFiltered(){
+ var data=window.KANA_WORDS||[],cat=q("vocabCat").value,s=q("vocabSearch").value.trim().toLowerCase();
+ return data.filter(function(w){
+   if(VSEL && hira(w[1]).indexOf(VSEL.h)<0)return false;
+   if(cat && w[3]!=cat)return false;
+   if(s && (w[0]+" "+w[1]+" "+w[2]+" "+romanize(w[1])).toLowerCase().indexOf(s)<0)return false;
+   return true;
+ });
+}
+function renderWords(){
+ var list=vocabFiltered(),box=q("wordList");box.innerHTML="";
+ q("wordCount").textContent=list.length+" 个关联词";
+ if(!list.length){box.innerHTML='<div class="sm">当前筛选没有匹配词。换一个假名或清空搜索试试。</div>';return}
+ list.slice(0,80).forEach(function(w){
+   var d=document.createElement("div");d.className="word-card";
+   var rd=VSEL?highlightKana(w[1],VSEL):esc(hira(w[1]));
+   d.innerHTML='<div class="word-main">'+esc(w[0])+'</div><div class="word-reading">'+rd+'</div><div class="word-romaji'+(q("showVocabRomaji").checked?'':' hide')+'">'+esc(romanize(w[1]))+'</div><div class="word-zh">'+esc(w[2])+'</div><span class="tag">'+esc(w[3])+'</span>';
+   box.appendChild(d)
+ });
+}
+function setVocabKana(i){
+ VSEL=i;
+ q("focusKana").textContent=i.h+" / "+i.k;
+ q("focusRomaji").textContent=i.r;
+ document.querySelectorAll(".kana-btn").forEach(function(b){b.classList.toggle("active",b.dataset.id==String(i.id))});
+ renderWords();
+}
+function renderKanaPicker(){
+ var set=q("vocabSet").value;
+ var arr=A.filter(function(i){return set=="all"||i.t==set});
+ var box=q("kanaPicker");box.innerHTML="";
+ arr.forEach(function(i){
+   var b=document.createElement("button");b.className="kana-btn";b.dataset.id=i.id;b.type="button";
+   b.innerHTML="<b>"+i.h+" "+i.k+"</b><span>"+i.r+"</span>";
+   b.onclick=function(){setVocabKana(i)};
+   box.appendChild(b)
+ });
+ if(!VSEL||arr.indexOf(VSEL)<0)setVocabKana(arr[0]);else setVocabKana(VSEL);
+}
+function initVocab(){
+ var cats=[];(window.KANA_WORDS||[]).forEach(function(w){if(cats.indexOf(w[3])<0)cats.push(w[3])});
+ cats.forEach(function(x){var o=document.createElement("option");o.value=x;o.textContent=x;q("vocabCat").appendChild(o)});
+ renderKanaPicker();
+}
+q("openVocab").onclick=function(){q("setup").classList.add("hide");q("statsCard").classList.add("hide");q("vocabCard").classList.remove("hide");renderKanaPicker()};
+q("closeVocab").onclick=function(){q("vocabCard").classList.add("hide");q("setup").classList.remove("hide")};
+q("vocabSet").onchange=renderKanaPicker;
+q("vocabCat").onchange=renderWords;
+q("vocabSearch").oninput=renderWords;
+q("showVocabRomaji").onchange=renderWords;
+q("randomKana").onclick=function(){
+ var set=q("vocabSet").value,arr=A.filter(function(i){return set=="all"||i.t==set});
+ if(arr.length)setVocabKana(rnd(arr));
+};
+initVocab();
 function stats(){var s=Object.values(load()).sort(function(a,b){return b.w-a.w});q("weakGrid").innerHTML="";if(!s.length)q("weakGrid").innerHTML='<div class="sm">还没有统计数据，先做几轮吧。</div>';else s.slice(0,30).forEach(function(x){var d=document.createElement("div");d.className="wi";d.innerHTML="<b>"+x.h+" / "+x.k+"</b><div>"+x.r+'</div><div class="sm">错 '+x.w+" 次 · "+Math.round(x.w/x.n*100)+"%</div>";q("weakGrid").appendChild(d)});q("statsCard").classList.remove("hide")}
 q("showStats").onclick=stats;q("closeStats").onclick=function(){q("statsCard").classList.add("hide")};q("resetStats").onclick=function(){if(confirm("确定清空统计吗？")){localStorage.removeItem("kanaStats");stats()}};
 </script>
