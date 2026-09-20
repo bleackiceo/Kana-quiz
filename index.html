@@ -28,8 +28,15 @@ hr{border:0;border-top:1px solid var(--l);margin:14px 0}.hide{display:none!impor
 .kana-picker{display:grid;grid-template-columns:repeat(auto-fit,minmax(74px,1fr));gap:7px;margin-top:12px}
 .kana-btn{background:var(--c);color:var(--t);border:1px solid var(--l);padding:8px 6px}.kana-btn b{display:block;font-size:24px}.kana-btn span{font-size:11px;color:var(--m)}.kana-btn.active{outline:2px solid var(--a);background:var(--a2)}
 .focusbox{border:1px solid var(--l);border-radius:15px;padding:14px;margin-top:14px;background:var(--a2)}.focuskana{font-size:38px;font-weight:800}.focusromaji{color:var(--m);margin-left:8px}
-.word-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:9px;margin-top:12px}.word-card{border:1px solid var(--l);border-radius:14px;padding:12px;background:var(--c)}.word-main{font-size:23px;font-weight:800}.word-reading{font-size:18px;margin-top:4px}.word-romaji{color:var(--m);font-size:14px;margin-top:3px}.word-zh{margin-top:7px}.tag{display:inline-block;color:var(--m);font-size:11px;border:1px solid var(--l);border-radius:999px;padding:2px 7px;margin-top:7px}mark{background:transparent;color:var(--a);font-weight:900;text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:3px}
-@media(max-width:600px){.stats{grid-template-columns:1fr 1fr}#prompt{font-size:62px}}
+.word-list{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin-top:12px}
+.word-card{border:1px solid var(--l);border-radius:10px;padding:10px;background:var(--c);min-width:0;display:flex;flex-direction:column;min-height:148px}
+.word-main{font-size:19px;font-weight:800;line-height:1.3;word-break:break-word}
+.word-reading{font-size:15px;line-height:1.45;margin-top:5px;word-break:break-word}
+.word-romaji{color:var(--m);font-size:12px;line-height:1.35;margin-top:2px;word-break:break-word}
+.word-zh{margin-top:7px;font-size:13px;line-height:1.45;flex:1}
+.tag{align-self:flex-start;display:inline-block;color:var(--m);font-size:10px;border:1px solid var(--l);border-radius:999px;padding:2px 6px;margin-top:7px}mark{background:transparent;color:var(--a);font-weight:900;text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:3px}
+@media(max-width:980px){.word-list{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:600px){.stats{grid-template-columns:1fr 1fr}#prompt{font-size:62px}.word-list{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.word-card{padding:9px;min-height:138px}.word-main{font-size:18px}.word-reading{font-size:14px}.word-zh{font-size:12px}}
 </style>
 </head>
 <body><main>
@@ -71,7 +78,7 @@ hr{border:0;border-top:1px solid var(--l);margin:14px 0}.hide{display:none!impor
 
 <section id="vocabCard" class="card hide">
 <div class="row" style="justify-content:space-between">
-  <div><h3>假名 × 单词联想</h3><div class="sm">不是考试。点一个假名，看它在真实常用词里怎么出现，建立“字形 → 音 → 单词”的联结。</div></div>
+  <div><h3>假名 × 单词联想</h3><div class="sm">不是考试。点一个假名，看它在真实常用词里怎么出现，建立“字形 → 音 → 单词”的联结。词卡采用教材式紧凑排版，宽屏每行 5 个。</div></div>
   <button class="ghost" id="closeVocab">返回</button>
 </div>
 <div class="vocab-nav" style="margin-top:12px">
